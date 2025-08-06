@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <winstring.h>
+#include <wchar.h>
 
 void _private_assignScannedFile(ScannedFile* lpScannedFile, LPWIN32_FIND_DATAW lpFindData) {
     memset(lpScannedFile, 0, sizeof(ScannedFile));
@@ -78,7 +78,7 @@ ErrorCode FileScanner_Next(FileScanner* const scanner, ScannedFile* const lpScan
     if (!scanner->firstFileIterated) {
         scanner->firstFileIterated = 1;
     } else {
-        WINBOOL ok = FindNextFileW(scanner->hSearch, lpFindData);
+        BOOL ok = FindNextFileW(scanner->hSearch, lpFindData);
         if (!ok) {
             if (GetLastError() == ERROR_NO_MORE_FILES) {
                 FindClose(scanner->hSearch);

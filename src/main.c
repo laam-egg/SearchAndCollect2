@@ -56,6 +56,7 @@ int main() {
     DFSFileScanner* lpDFSScanner = &dfsScanner;
     ErrorCode err;
 
+    // wchar_t const* rootPath = L"C:\\Users\\admin\\Desktop\\_\\OneDrive\\Documents\\Viettel\\_\\Papers\\VCS aJiant\\User guide";
     wchar_t const* rootPath = L"C:\\Users\\admin\\Desktop\\_\\OneDrive\\Documents\\Viettel\\";
     TRAP(DFSFileScanner_Init(lpDFSScanner, rootPath))
 

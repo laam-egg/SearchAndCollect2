@@ -22,12 +22,16 @@ ErrorCode DFSFileScanner_Init(DFSFileScanner* const scanner, wchar_t const* cons
         
         PathElement elem;
         TRAP(FileScanner_Init(&elem.scanner, startPath))
-        wcsncpy(elem.content, startPath, MY_MAX_PATH_LENGTH);
+        elem.content[0] = L'\0';
         TRAP_LK(lkPathElement_Insert(lpPathElementStack, NULL, &elem))
     }
 
     {
         wcsncpy(scanner->currentPrefix, startPath, MY_MAX_PATH_LENGTH);
+    }
+
+    {
+        wcsncpy(scanner->startPath, startPath, MY_MAX_PATH_LENGTH);
     }
 
     {
@@ -49,7 +53,6 @@ ErrorCode DFSFileScanner_Next(DFSFileScanner* const scanner, DFSScannedFile* con
     if (lkPathElement_Size(scanner->pathElementStack) == 0) {
         return STOP_ITERATION;
     }
-    debug(L"DFSFileScanner_Next called with stack size %d", lkPathElement_Size(scanner->pathElementStack));
 
     ErrorCode err = ERR_NONE;
 
@@ -78,7 +81,7 @@ ErrorCode DFSFileScanner_Next(DFSFileScanner* const scanner, DFSScannedFile* con
     // Rebuild current path prefix if demanded
     if (scanner->rebuildCurrentPrefix) {
         wchar_t* const currentPath = scanner->currentPrefix;
-        currentPath[0] = L'\0';
+        wcsncpy(currentPath, scanner->startPath, MY_MAX_PATH_LENGTH);
         LkPathElement_Node* currentPtr = lkPathElement_Head(lpPathElementStack);
         while (currentPtr != NULL) {
             PathElement* current = lkPathElement_GetNodeDataPtr(lpPathElementStack, currentPtr);

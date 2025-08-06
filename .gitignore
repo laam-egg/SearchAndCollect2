@@ -1,4 +1,5 @@
 .vscode/
+.vs/
 
 # CMake generated files
 build/

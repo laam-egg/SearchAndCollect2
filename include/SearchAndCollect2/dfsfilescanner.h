@@ -27,6 +27,7 @@ typedef struct {
     ScannedFile tempScannedFile;
     int maxDepth;
     int rebuildCurrentPrefix;
+    wchar_t startPath[MY_MAX_PATH_LENGTH];
     wchar_t currentPrefix[MY_MAX_PATH_LENGTH];
 } DFSFileScanner;
 
