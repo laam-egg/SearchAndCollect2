@@ -24,18 +24,8 @@ void _private_assignScannedFile(ScannedFile* lpScannedFile, LPWIN32_FIND_DATAW l
     }
 }
 
-ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const _in_startPath, FileScannerInitConfig const* const _in_config) {
+ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const _in_startPath) {
     memset(scanner, 0, sizeof(FileScanner));
-
-    if (_in_config->flags & FILESCANNER_MULTITHREADED) {
-        scanner->hMutex = CreateMutexW(NULL, FALSE, NULL);
-        if (scanner->hMutex == NULL) {
-            debug(L"FileScanner_Init: failed to initialize mutex");
-            return ERR_WINAPI;
-        }
-    } else {
-        scanner->hMutex = NULL;
-    }
 
     wchar_t startPath[MY_MAX_PATH_LENGTH];
     {
@@ -47,16 +37,8 @@ ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const _in_
         }
 
         wchar_t lastCharIn_in_startPath = _in_startPath[wcslen(_in_startPath) - 1];
-        int _in_startPath_hasTrailingSlashAlready = (lastCharIn_in_startPath == L'\\');
-        wchar_t const* suffix = L"";
-
-        if (_in_startPath_hasTrailingSlashAlready) {
-            suffix = L"*";
-        } else {
-            suffix = L"\\*";
-        }
-
-        swprintf(startPath, MY_MAX_PATH_LENGTH, L"%ls%ls%ls", prefix, _in_startPath, suffix);
+        swprintf(startPath, MY_MAX_PATH_LENGTH, L"%ls%ls", prefix, _in_startPath);
+        concatPaths(startPath, MY_MAX_PATH_LENGTH, L"*");
     }
 
     {
@@ -67,92 +49,47 @@ ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const _in_
                 debug(L"FileScanner_Init: No such file or directory: %ls", startPath);
                 return ERR_NONE;
             } else {
-                debug(L"FileScanner_Init: failed to open path: %ls",startPath);
+                debug(L"FileScanner_Init: failed to open path: %ls", startPath);
                 return ERR_WINAPI;
             }
         }
-        
-        scanner->firstScannedFile = (ScannedFile*)malloc(sizeof(ScannedFile));
-        if (scanner->firstScannedFile == NULL) {
-            return ERR_OUT_OF_MEMORY;
-        }
-        _private_assignScannedFile(scanner->firstScannedFile, &scanner->tempFindData);
     }
 
     {
-        memcpy(&scanner->config, _in_config, sizeof(FileScannerInitConfig));
+        scanner->firstFileIterated = 0;
     }
 
     return ERR_NONE;
 }
 
-void FileScanner_Close(FileScanner* scanner) {
-    if (scanner->hMutex != NULL) {
-        if (ERR_NONE != WaitMutexSafe(scanner->hMutex, INFINITE)) {
-            return; // erroneous state, abort
-        }
-    }
-
-    {
+void FileScanner_Close(FileScanner* const scanner) {
+    if (scanner->hSearch != INVALID_HANDLE_VALUE) {
         FindClose(scanner->hSearch);
-        scanner->hSearch = NULL;
+        scanner->hSearch = INVALID_HANDLE_VALUE;
     }
-
-    {
-        if (scanner->firstScannedFile != NULL) {
-            free((void*)scanner->firstScannedFile);
-            scanner->firstScannedFile = NULL;
-        }
-    }
-
-    if (scanner->hMutex != NULL) {
-        ReleaseMutex(scanner->hMutex);
-        CloseHandle(scanner->hMutex);
-    }
-    scanner->hMutex = NULL;
 }
 
-#define FileScanner_WRAP(UNSAFE_FUNCTION_CALL) \
-    if (scanner->hMutex != NULL) { \
-        if (ERR_NONE != WaitMutexSafe(scanner->hMutex, INFINITE)) { \
-            return ERR_WAITMUTEX; \
-        } \
-    } \
-    \
-    ErrorCode err = UNSAFE_FUNCTION_CALL; \
-    \
-    if (scanner->hMutex != NULL) { \
-        ReleaseMutex(scanner->hMutex); \
-    } \
-    return err;
-
-ErrorCode _unsafe_FileScanner_Next(FileScanner* scanner, ScannedFile* lpScannedFile) {
+ErrorCode FileScanner_Next(FileScanner* const scanner, ScannedFile* const lpScannedFile) {
     if (scanner->hSearch == INVALID_HANDLE_VALUE) {
         return STOP_ITERATION;
     }
 
-    if (scanner->firstScannedFile != NULL) {
-        memcpy(lpScannedFile, scanner->firstScannedFile, sizeof(ScannedFile));
-        free((void*)scanner->firstScannedFile);
-        scanner->firstScannedFile = NULL;
+    WIN32_FIND_DATAW* const lpFindData = &scanner->tempFindData;
+    if (!scanner->firstFileIterated) {
+        scanner->firstFileIterated = 1;
     } else {
-        LPWIN32_FIND_DATAW lpFindData = &scanner->tempFindData;
         WINBOOL ok = FindNextFileW(scanner->hSearch, lpFindData);
         if (!ok) {
             if (GetLastError() == ERROR_NO_MORE_FILES) {
+                FindClose(scanner->hSearch);
+                scanner->hSearch = INVALID_HANDLE_VALUE;
                 return STOP_ITERATION;
             } else {
                 return ERR_WINAPI;
             }
-        } else {
-            _private_assignScannedFile(lpScannedFile, lpFindData);
-        }
-        if (lpScannedFile->type == IS_DIRECTORY) {
-            
         }
     }
+
+    _private_assignScannedFile(lpScannedFile, lpFindData);
     return ERR_NONE;
-}
-ErrorCode FileScanner_Next(FileScanner* scanner, ScannedFile* lpScannedFile) {
-    FileScanner_WRAP(_unsafe_FileScanner_Next(scanner, lpScannedFile));
 }

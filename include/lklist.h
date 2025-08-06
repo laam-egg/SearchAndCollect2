@@ -42,13 +42,11 @@ void _cz(LkList const* ll, size_t dataSize);
 #define CZ(ll, T)
 #endif
 
-void _noopCleanElement(void* elementData) {}
-
 #define LK_WANT_PRIMITIVE_TYPE(T, PREFIX, SUFFIX) \
 typedef LkList Lk##PREFIX##List##SUFFIX; \
 typedef LkNode Lk##PREFIX##Node##SUFFIX; \
 TEMPLATE_FUNCTION LkList* lk##PREFIX##Init##SUFFIX() { \
-    return lkInit(sizeof(T), _noopCleanElement); \
+    return lkInit(sizeof(T), NULL); \
 } \
 TEMPLATE_FUNCTION void lk##PREFIX##Clear##SUFFIX(LkList* ll) { \
     CZ(ll, T) \
@@ -116,11 +114,12 @@ TEMPLATE_FUNCTION T* lk##PREFIX##CopyToNewArray##SUFFIX(LkList const* ll) { \
     return (T*)lkCopyToNewArray(ll); \
 } \
 
-
-
-#define LK_WANT_STRUCT_TYPE(T, PREFIX, SUFFIX, ELEMENT_FREE_CALLBACK) \
+#define LK_DECLARE_STRUCT_TYPE(T, PREFIX, SUFFIX, ELEMENT_FREE_CALLBACK) \
 typedef LkList Lk##PREFIX##List##SUFFIX; \
 typedef LkNode Lk##PREFIX##Node##SUFFIX; \
+// TODO: function signatures
+
+#define LK_IMPLEMENT_STRUCT_TYPE(T, PREFIX, SUFFIX, ELEMENT_FREE_CALLBACK) \
 TEMPLATE_FUNCTION LkList* lk##PREFIX##Init##SUFFIX() { \
     return lkInit(sizeof(T), ELEMENT_FREE_CALLBACK); \
 } \
@@ -153,7 +152,7 @@ TEMPLATE_FUNCTION LkNode* lk##PREFIX##After##SUFFIX(LkNode const* node) { \
 TEMPLATE_FUNCTION bool lk##PREFIX##Next##SUFFIX(LkNode** currentNodePtr) { \
     return lkNext(currentNodePtr); \
 } \
-TEMPLATE_FUNCTION T* lk##PREFIX##GetNodeData##SUFFIX(LkList const* ll, LkNode* node) { \
+TEMPLATE_FUNCTION T* lk##PREFIX##GetNodeDataPtr##SUFFIX(LkList const* ll, LkNode* node) { \
     CZ(ll, T) \
     return (T*)lkGetNodeDataPtr(ll, node); \
 } \

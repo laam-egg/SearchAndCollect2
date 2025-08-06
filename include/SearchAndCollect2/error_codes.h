@@ -4,9 +4,10 @@
 typedef enum {
     ERR_NONE = 0,
     ERR_WINAPI,
-    ERR_WAITMUTEX,
     STOP_ITERATION,
-    ERR_OUT_OF_MEMORY
+    ERR_OUT_OF_MEMORY,
+    ERR_INVALID_HANDLE,
+    ERR_LKLIST
 } ErrorCode;
 
 #endif // SearchAndCollect2_ERROR_CODES_INCLUDED

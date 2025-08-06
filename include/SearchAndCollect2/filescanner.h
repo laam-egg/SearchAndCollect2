@@ -1,5 +1,5 @@
 /**
- * Supports path traversal in a DFS fashion.
+ * (Non-recursive) filesystem traversal under a single directory.
  */
 
 #ifndef SearchAndCollect2_FILE_SCANNER_INCLUDED
@@ -9,22 +9,6 @@
 #include <windows.h>
 #include "SearchAndCollect2/error_codes.h"
 #include "SearchAndCollect2/common.h"
-
-/**
- * Used in FileScannerInitConfig
- */
-typedef enum {
-    FILESCANNER_DEFAULT = 0,
-    FILESCANNER_MULTITHREADED = 1
-} FileScannerInitFlag;
-
-/**
- * Used in FileScanner_Init()
- */
-typedef struct {
-    FileScannerInitFlag flags;
-} FileScannerInitConfig;
-
 
 /**
  * Used in ScannedFile
@@ -44,20 +28,19 @@ typedef struct {
 } ScannedFile;
 
 /**
- * Public use, however all members are private - not meant to be accessed from outside
+ * Represents a FileScanner object.
+ * Public use, however all members are private.
  */
 typedef struct {
-    HANDLE hMutex;
     HANDLE hSearch;
-    ScannedFile* firstScannedFile;
     WIN32_FIND_DATAW tempFindData;
-    FileScannerInitConfig config;
+    int firstFileIterated;
 } FileScanner;
 
-ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const startPath, FileScannerInitConfig const* const config);
+ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const startPath);
 
-ErrorCode FileScanner_Next(FileScanner* scanner, ScannedFile* scannedFile);
+ErrorCode FileScanner_Next(FileScanner* const scanner, ScannedFile* const scannedFile);
 
-void FileScanner_Close(FileScanner* scanner);
+void FileScanner_Close(FileScanner* const scanner);
 
 #endif // SearchAndCollect2_FILE_SCANNER_INCLUDED

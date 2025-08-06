@@ -245,7 +245,8 @@ typedef struct {
     int age;
 } Student;
 
-LK_WANT_STRUCT_TYPE(Student, Student_, )
+LK_DECLARE_STRUCT_TYPE(Student, Student_, , NULL)
+LK_IMPLEMENT_STRUCT_TYPE(Student, Student_, , NULL)
 
 int main() {
     LkInt_List* ll = lkInt_Init();
