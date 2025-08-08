@@ -12,7 +12,11 @@ void freePathElement(void* const data) {
 #define TRAP_LK(ONCE_REFERENCED_VALUE)          lkSuccess = ONCE_REFERENCED_VALUE; if (!lkSuccess) return ERR_LKLIST;
 #define TRAP_NULL(ONCE_REFERENCED_VALUE, ERR)   if (ONCE_REFERENCED_VALUE == NULL) return ERR;
 
-ErrorCode DFSFileScanner_Init(DFSFileScanner* const scanner, wchar_t const* const startPath) {
+ErrorCode DFSFileScanner_Init(
+    DFSFileScanner* const scanner,
+    wchar_t const* const startPath,
+    DFSFileScannerConfig const* const lpConfig
+) {
     ErrorCode err = ERR_NONE;
     int lkSuccess;
 
@@ -35,11 +39,15 @@ ErrorCode DFSFileScanner_Init(DFSFileScanner* const scanner, wchar_t const* cons
     }
 
     {
-        scanner->maxDepth = 0; // TODO: adjust
+        scanner->rebuildCurrentPrefix = 0;
     }
 
     {
-        scanner->rebuildCurrentPrefix = 0;
+        scanner->config.flags = DFSFileScanner_DEFAULT;
+        scanner->config.maxDepth = DFSFileScanner_NO_MAX_DEPTH;
+        if (lpConfig != NULL) {
+            memcpy(&scanner->config, lpConfig, sizeof(DFSFileScannerConfig));
+        }
     }
 
     return err;
@@ -104,19 +112,32 @@ ErrorCode DFSFileScanner_Next(DFSFileScanner* const scanner, DFSScannedFile* con
     }
 
     {
+        int const maxDepth = scanner->config.maxDepth;
+        int const ignoreAccessDeniedSubdirectories = (
+            scanner->config.flags & DFSFileScanner_IGNORE_ACCESS_DENIED_SUBDIRECTORIES
+        );
+
         // If encounter directory, go deeper next time
         if (
             lpDFSScannedFile->type == IS_DIRECTORY
             && !(wcscmp(L".", lpScannedFile->fileName) == 0)
             && !(wcscmp(L"..", lpScannedFile->fileName) == 0)
-            && (scanner->maxDepth <= 0 || lkPathElement_Size(lpPathElementStack) < scanner->maxDepth)
+            && (maxDepth <= 0 || lkPathElement_Size(lpPathElementStack) < maxDepth)
         ) {
             PathElement newPathElement;
-            wcsncpy(newPathElement.content, lpScannedFile->fileName, MY_MAX_FILE_NAME_LENGTH);
-            wcsncpy(scanner->currentPrefix, lpDFSScannedFile->filePath, MY_MAX_PATH_LENGTH);
-            TRAP(FileScanner_Init(&newPathElement.scanner, scanner->currentPrefix));
-            lkPathElement_Insert(lpPathElementStack, NULL, &newPathElement);
-            scanner->rebuildCurrentPrefix = 0;
+            wchar_t* const pathToSubdirectory = scanner->tempPath1;
+            wcsncpy(pathToSubdirectory, lpDFSScannedFile->filePath, MY_MAX_PATH_LENGTH);
+            err = FileScanner_Init(&newPathElement.scanner, pathToSubdirectory);
+            if (ignoreAccessDeniedSubdirectories && err == ERR_ACCESS_DENIED) {
+                debug(L"Access to directory denied, so skipped: %ls", pathToSubdirectory);
+                err = ERR_NONE;
+            } else {
+                TRAP(err)
+                wcsncpy(newPathElement.content, lpScannedFile->fileName, MY_MAX_FILE_NAME_LENGTH);
+                wcsncpy(scanner->currentPrefix, pathToSubdirectory, MY_MAX_PATH_LENGTH);
+                lkPathElement_Insert(lpPathElementStack, NULL, &newPathElement);
+                scanner->rebuildCurrentPrefix = 0;
+            }
         }
     }
 

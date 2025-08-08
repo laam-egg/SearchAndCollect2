@@ -45,12 +45,19 @@ ErrorCode FileScanner_Init(FileScanner* const scanner, wchar_t const* const _in_
         LPWIN32_FIND_DATAW lpFindData = &scanner->tempFindData;
         scanner->hSearch = FindFirstFileW(startPath, lpFindData);
         if (scanner->hSearch == INVALID_HANDLE_VALUE) {
-            if (ERROR_FILE_NOT_FOUND == GetLastError()) {
-                debug(L"FileScanner_Init: No such file or directory: %ls", startPath);
-                return ERR_NONE;
-            } else {
-                debug(L"FileScanner_Init: failed to open path: %ls", startPath);
-                return ERR_WINAPI;
+            DWORD dwLastError = GetLastError();
+            switch (dwLastError) {
+                case ERROR_FILE_NOT_FOUND:
+                    debug(L"FileScanner_Init: No such file or directory: %ls", startPath);
+                    return ERR_NONE;
+                
+                case ERROR_ACCESS_DENIED:
+                    debug(L"FileScanner_Init: Access to directory denied: %ls", startPath);
+                    return ERR_ACCESS_DENIED;
+                
+                default:
+                    debug(L"FileScanner_Init: failed to open path: %ls", startPath);
+                    return ERR_WINAPI;
             }
         }
     }
@@ -80,12 +87,18 @@ ErrorCode FileScanner_Next(FileScanner* const scanner, ScannedFile* const lpScan
     } else {
         BOOL ok = FindNextFileW(scanner->hSearch, lpFindData);
         if (!ok) {
-            if (GetLastError() == ERROR_NO_MORE_FILES) {
-                FindClose(scanner->hSearch);
-                scanner->hSearch = INVALID_HANDLE_VALUE;
-                return STOP_ITERATION;
-            } else {
-                return ERR_WINAPI;
+            DWORD dwLastError = GetLastError();
+            switch (dwLastError) {
+                case ERROR_NO_MORE_FILES:
+                    FindClose(scanner->hSearch);
+                    scanner->hSearch = INVALID_HANDLE_VALUE;
+                    return STOP_ITERATION;
+                
+                case ERROR_ACCESS_DENIED:
+                    return ERR_ACCESS_DENIED;
+                
+                default:
+                    return ERR_WINAPI;
             }
         }
     }

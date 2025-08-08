@@ -9,7 +9,10 @@ set(SOURCES
     src/common.c                include/SearchAndCollect2/common.h
     src/filescanner.c           include/SearchAndCollect2/filescanner.h
     src/dfsfilescanner.c        include/SearchAndCollect2/dfsfilescanner.h
-    include/SearchAndCollect2/error_codes.h
+    src/pe.c                    include/SearchAndCollect2/pe.h
+    src/hashing.c               include/SearchAndCollect2/hashing.h
+    src/collect.c               include/SearchAndCollect2/collect.h
+    src/error_codes.c           include/SearchAndCollect2/error_codes.h
 
     src/lklist.c                include/lklist.h
 )

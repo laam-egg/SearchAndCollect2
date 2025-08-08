@@ -54,3 +54,17 @@ void concatPaths(wchar_t* dest, size_t const destSize, wchar_t const* tail) {
     }
     safeWstrcat(dest, destSize, tail);
 }
+
+// Cre ChatGPT
+wchar_t const* getFileExtension(wchar_t const* const path) {
+    const wchar_t *dot    = wcsrchr(path, L'.');      // last '.'
+    const wchar_t *slash1 = wcsrchr(path, L'/');      // last '/' (Unix)
+    const wchar_t *slash2 = wcsrchr(path, L'\\');     // last '\' (Windows)
+    // Find the last slash
+    const wchar_t *slash  = (slash1 > slash2) ? slash1 : slash2;
+
+    if (!dot || (slash && dot < slash)) {
+        return L"";  // no extension or dot is in a directory name
+    }
+    return dot + 1;  // skip '.'
+}
