@@ -7,6 +7,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(SOURCES
     src/main.c
     src/common.c                include/SearchAndCollect2/common.h
+	src/config.c				include/SearchAndCollect2/config.h
     src/filescanner.c           include/SearchAndCollect2/filescanner.h
     src/dfsfilescanner.c        include/SearchAndCollect2/dfsfilescanner.h
     src/pe.c                    include/SearchAndCollect2/pe.h
@@ -25,11 +26,38 @@ set(LIBRARIES
     bcrypt
 )
 
+
+
+# add_executable(test_lklist ${SOURCES})
+# target_compile_definitions(test_lklist PRIVATE LK_RUN_TEST)
+# target_include_directories(test_lklist PRIVATE ${INCLUDES})
+# target_link_libraries(test_lklist PRIVATE ${LIBRARIES})
+
+
+
+
+
+# This program makes extensive use of reusable stack buffers
+# for reducing heap allocations. As such, increasing the
+# stack size is required so that the OS won't issue a
+# "stack overflow" error in normal circumstances.
+#
+# 16 MB is just a generous estimate; the program might actually
+# use less at most.
+
+if (MSVC)
+    add_link_options(/STACK:16777216)
+elseif (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    if (WIN32)
+        add_link_options("-Wl,--stack,16777216")
+    else()
+        # Linux, BSD, macOS: raise stack at runtime via setrlimit()
+        # add_compile_definitions(SET_STACK_AT_RUNTIME)
+		# But this program only runs on Windows so...
+		message(FATAL_ERROR "This program can only be built on Windows.")
+    endif()
+endif()
+
 add_executable(SearchAndCollect2 ${SOURCES})
 target_include_directories(SearchAndCollect2 PRIVATE ${INCLUDES})
 target_link_libraries(SearchAndCollect2 PRIVATE ${LIBRARIES})
-
-add_executable(test_lklist ${SOURCES})
-target_compile_definitions(test_lklist PRIVATE LK_RUN_TEST)
-target_include_directories(test_lklist PRIVATE ${INCLUDES})
-target_link_libraries(test_lklist PRIVATE ${LIBRARIES})

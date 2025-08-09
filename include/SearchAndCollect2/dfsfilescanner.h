@@ -29,7 +29,7 @@ typedef enum {
      * functions would return ERR_ACCESS_DENIED. You might just
      * ignore the error then.
      */
-    DFSFileScanner_IGNORE_ACCESS_DENIED_SUBDIRECTORIES
+    DFSFileScanner_IGNORE_ACCESS_DENIED_SUBDIRECTORIES = 1
 } DFSFileScannerFlags;
 
 typedef struct {

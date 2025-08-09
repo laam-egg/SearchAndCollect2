@@ -22,4 +22,6 @@ void concatPaths(wchar_t* dest, size_t const destSize, wchar_t const* tail);
 
 wchar_t const* getFileExtension(wchar_t const* const path);
 
+int randomNumberInRangeInclusive(int min, int max);
+
 #endif // SearchAndCollect2_COMMON_INCLUDED

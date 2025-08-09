@@ -6,6 +6,14 @@
 #define TRAP(ONCE_REFERENCED_VALUE) err = ONCE_REFERENCED_VALUE; if (err != ERR_NONE) { THROW(err) }
 
 #define BUF_SIZE 1048576 // 1 MB buffer size
+// TODO: Move data buffer and hash buffer to CollectContext
+// instead of doing heap allocation.
+
+/**
+ * In case of --append-random-bytes,
+ * append at least this many bytes.
+ */
+#define MIN_RANDOM_BYTES 16
 
 ErrorCode Collector_Init(CollectContext* const ctx) {
     ErrorCode err = ERR_NONE;
@@ -28,7 +36,7 @@ void Collector_Close(CollectContext* const ctx) {
 // 32 bytes
 static wchar_t const* const TEMP_FILE_NAME = L"this-pe-is-being-processed.exe";
 
-ErrorCode Collector_Run(CollectContext* const ctx, wchar_t const* const inputFilePath, wchar_t const* const outputFileDir) {
+ErrorCode Collector_Run(CollectContext* const ctx, Config const* const config, wchar_t const* const inputFilePath, wchar_t const* const outputFileDir) {
     ErrorCode err = ERR_NONE;
 
     wchar_t* const tempFilePath = ctx->tempPath;
@@ -127,6 +135,36 @@ ErrorCode Collector_Run(CollectContext* const ctx, wchar_t const* const inputFil
             }
         }
     }
+
+	{
+		// APPEND RANDOM BYTES IF REQUESTED
+		if (config->flags & Config_APPEND_RANDOM_BYTES) {
+			DWORD bytesWritten = 0;
+			DWORD totalRandomBytesWritten = 0;
+			BYTE randomBytes[MIN_RANDOM_BYTES] = { 0 };
+			while (totalRandomBytesWritten < MIN_RANDOM_BYTES || randomNumberInRangeInclusive(0, 100) > 50) {
+				for (int i = 0; i < MIN_RANDOM_BYTES; ++i) {
+					randomBytes[i] = (BYTE)randomNumberInRangeInclusive(32, 254);
+					// Safety measure, might not really need this
+					if (randomBytes[i] == 0 || randomBytes[i] == 26) {
+						debug(L"WARNING: Collector_Run(): unexpected code path");
+						randomBytes[i] = 1;
+					}
+				}
+
+				if (FALSE == WriteFile(hDest, randomBytes, MIN_RANDOM_BYTES, &bytesWritten, NULL)) {
+					debug(L"ERROR: Collector_Run(): failed to WriteFile(): GetLastError() = %lu", GetLastError());
+					THROW(ERR_WINAPI)
+				}
+				if (bytesWritten != MIN_RANDOM_BYTES) {
+					debug(L"ERROR: Collector_Run(): number of bytes written is less than bytes read");
+					THROW(ERR_UNKNOWN)
+				}
+
+				totalRandomBytesWritten += bytesWritten;
+			}
+		}
+	}
 
     {
         // RENAME FILE AFTER THE HASH

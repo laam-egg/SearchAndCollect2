@@ -3,6 +3,7 @@
 
 #include "SearchAndCollect2/common.h"
 #include "SearchAndCollect2/hashing.h"
+#include "SearchAndCollect2/config.h"
 #include <wchar.h>
 
 typedef struct {
@@ -15,7 +16,7 @@ typedef struct {
 
 ErrorCode Collector_Init(CollectContext* const ctx);
 
-ErrorCode Collector_Run(CollectContext* const ctx, wchar_t const* const inputFilePath, wchar_t const* const outputFileDir);
+ErrorCode Collector_Run(CollectContext* const ctx, Config const* const config, wchar_t const* const inputFilePath, wchar_t const* const outputFileDir);
 
 void Collector_Close(CollectContext* const ctx);
 

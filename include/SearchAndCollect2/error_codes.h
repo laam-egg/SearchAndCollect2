@@ -12,7 +12,8 @@ typedef enum {
     ERR_INVALID_HANDLE,
     ERR_LKLIST,
     ERR_ACCESS_DENIED,
-    ERR_INVALID_ARGUMENT
+    ERR_INVALID_ARGUMENT,
+	ERR_COMMAND_LINE_ARGS
 } ErrorCode;
 
 extern wchar_t const* const ErrorMessage[];

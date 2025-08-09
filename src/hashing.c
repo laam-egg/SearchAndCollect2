@@ -8,7 +8,13 @@
 ErrorCode Hasher_Init(Hasher* const hasher, HasherConfig* const lpConfig) {
     ErrorCode err = ERR_NONE;
     memset(hasher, 0, sizeof(Hasher));
-    {
+
+	BCRYPT_ALG_HANDLE* lphAlg = NULL;
+	DWORD dwHashLength = 0;
+	DWORD dwObjLength = 0;
+	DWORD cbData = 0;
+	
+	{
         memcpy(&hasher->config, lpConfig, sizeof(HasherConfig));
     }
 
@@ -17,16 +23,12 @@ ErrorCode Hasher_Init(Hasher* const hasher, HasherConfig* const lpConfig) {
         THROW(ERR_INVALID_ARGUMENT)
     }
 
-    BCRYPT_ALG_HANDLE* lphAlg = &hasher->hAlg;
-    BCRYPT_ALG_HANDLE hAlg = NULL;
-    DWORD dwHashLength = 0;
-    DWORD dwObjLength = 0;
-    DWORD cbData = 0;
-    if (STATUS_SUCCESS != BCryptOpenAlgorithmProvider(lphAlg, BCRYPT_SHA256_ALGORITHM, NULL, 0)) {
+    if (STATUS_SUCCESS != BCryptOpenAlgorithmProvider(&hasher->hAlg, BCRYPT_SHA256_ALGORITHM, NULL, 0)) {
         debug(L"ERROR: HasherInit(): call to BCryptOpenAlgorithmProvider() failed");
         THROW(ERR_WINAPI)
     }
-    hAlg = *lphAlg;
+	lphAlg = &hasher->hAlg;
+	BCRYPT_ALG_HANDLE const hAlg = *lphAlg;
 
     if (STATUS_SUCCESS != BCryptGetProperty(hAlg, BCRYPT_HASH_LENGTH, (PBYTE)&dwHashLength, sizeof(dwHashLength), &cbData, 0)) {
         debug(L"ERROR: HasherInit(): call to BCryptGetProperty(...BCRYPT_HASH_LENGTH...) failed");
@@ -42,7 +44,7 @@ ErrorCode Hasher_Init(Hasher* const hasher, HasherConfig* const lpConfig) {
 
     cleanup:
     if (err != ERR_NONE) {
-        if (hAlg != NULL) BCryptCloseAlgorithmProvider(hAlg, 0);
+        if (lphAlg != NULL) BCryptCloseAlgorithmProvider(*lphAlg, 0);
     }
     return err;
 }

@@ -37,6 +37,8 @@ strengths:
     only `wchar_t`.
 - Uses only Win API as "external dependencies" (while the
     original uses OpenSSL).
+- Includes option to append random bytes to copied files.
+    [Read on](#notes-on-output-files) to see the reason why.
 
 It inherits the good points:
 
@@ -47,6 +49,10 @@ Besides, this tool supposedly supports Windows Vista and
 above, though I've only tested it on Windows 10 and 11.
 If you run into problems compiling this, please let me
 know in the Issues tab on GitHub.
+
+## Download
+
+Go to [the project's Release page on GitHub](https://github.com/laam-egg/SearchAndCollect2/releases).
 
 ## Building
 
@@ -65,12 +71,34 @@ cmake --build .
 ```sh
 cd $PROJECT_ROOT
 cd build
-# Prints help
-./SearchAndCollect2.exe
+
 # Collects all PE files from C:/input/dir to D:/output/dir
 # This tool is aware of Unicode paths!
+# If a path contains spaces, wrap it in a pair of double quotes ("")
 ./SearchAndCollect2.exe C:/input/dir D:/output/dir
+
+# Append random bytes to copied files to change the files'
+# signatures
+./SearchAndCollect2.exe C:/input/dir D:/output/dir --append-random-bytes
+
+# Prints help text for details on usage!
+./SearchAndCollect2.exe
 ```
+
+## Notes on Output Files
+
+Every copied file is named after the original file's
+SHA256 hash, while retaining the original file extension.
+
+If you specify `--append-random-bytes`, only the
+content of the files will differ; the file extension
+is still retained, and the file name is still named
+after the hash of the original file. Since the file
+content is now different, its new hash changes
+drastically, which might confuse signature-based
+malware detectors. So this option would come
+in handy when malware detection methods need to
+be evaluated in varying situations.
 
 ## License
 

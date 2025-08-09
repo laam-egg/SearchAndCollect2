@@ -68,3 +68,8 @@ wchar_t const* getFileExtension(wchar_t const* const path) {
     }
     return dot + 1;  // skip '.'
 }
+
+// Cre Gemini
+int randomNumberInRangeInclusive(int min, int max) {
+	return (rand() % (max - min + 1)) + min;
+}

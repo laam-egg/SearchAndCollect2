@@ -78,9 +78,11 @@ ErrorCode DFSFileScanner_Next(DFSFileScanner* const scanner, DFSScannedFile* con
     err = FileScanner_Next(lpFileScanner, lpScannedFile);
     if (err == STOP_ITERATION) {
         // Done at current level, navigate to the upper directory
+		err = ERR_NONE;
         lkPathElement_Remove(lpPathElementStack, lastElementNode);
         // Reconstruct path + recursion
         scanner->rebuildCurrentPrefix = 1;
+		// TODO: if there's cleanup later, modify this code
         return DFSFileScanner_Next(scanner, lpDFSScannedFile);
     }
     // Handle any other error of FileScanner_Next()

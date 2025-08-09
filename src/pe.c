@@ -34,6 +34,24 @@ BOOL isPEFile(wchar_t const* const filePath) {
         DEBUG(L"ERROR: isPEFile(): Failed to open file: %ls", filePath);
         return FALSE; 
 	}
+
+	{
+		LARGE_INTEGER fileSize;
+		if (0 == GetFileSizeEx(fileHandle, &fileSize)) {
+			DWORD dwLastError = GetLastError();
+			DEBUG(L"ERROR: isPEFile(): GetLastError() = %lu after calling GetFileSizeEx() on file: %ls", dwLastError, filePath);
+			return FALSE;
+		}
+		if ((size_t)fileSize.QuadPart < sizeof(IMAGE_DOS_HEADER)) {
+			debug(
+				L"isPEFile(): Skipping file as its size = %lu is less than sizeof(IMAGE_DOS_HEADER) = %llu: %ls",
+				(size_t)fileSize.QuadPart,
+				sizeof(IMAGE_DOS_HEADER),
+				filePath
+			);
+			return FALSE;
+		}
+	}
     
     DWORD dwMaxSizeHi = 0;
     DWORD dwMaxSizeLo = sizeof(IMAGE_DOS_HEADER);
@@ -42,11 +60,11 @@ BOOL isPEFile(wchar_t const* const filePath) {
         DWORD dwLastError = GetLastError();
 		CloseHandle(fileHandle);
         if (dwLastError == ERROR_FILE_INVALID) {
-            DEBUG(L"Skipping invalid file (maybe zero-sized): %ls", filePath);
+            DEBUG(L"Skipping invalid file: %ls", filePath);
         } else {
-            DEBUG(L"ERROR: isPEFile(): Failed to create memory mapped to file: %ls", filePath);
+            DEBUG(L"ERROR: isPEFile(): GetLastError() = %lu while creating memory mapped to file: %ls", dwLastError, filePath);
         }
-        return FALSE; 
+        return FALSE;
 	}
     
     fileBase = MapViewOfFile(fileMapping, FILE_MAP_READ, 0, 0, 0);
