@@ -69,6 +69,21 @@ wchar_t const* getFileExtension(wchar_t const* const path) {
     return dot + 1;  // skip '.'
 }
 
+// Cre ChatGPT
+wchar_t const* getFileNameFromPath(wchar_t const* const path) {
+    const wchar_t* last_slash1 = wcsrchr(path, L'\\'); // Windows backslash
+    const wchar_t* last_slash2 = wcsrchr(path, L'/');  // Unix forward slash
+
+    // Pick whichever slash is later in the string
+    const wchar_t* last_slash = last_slash1;
+    if (last_slash2 && (!last_slash || last_slash2 > last_slash)) {
+        last_slash = last_slash2;
+    }
+
+    // If found, return the part after the slash
+    return last_slash ? last_slash + 1 : path;
+}
+
 // Cre Gemini
 int randomNumberInRangeInclusive(int min, int max) {
 	return (rand() % (max - min + 1)) + min;

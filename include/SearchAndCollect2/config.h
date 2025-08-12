@@ -5,8 +5,8 @@
 
 typedef enum {
 	Config_DEFAULT = 0,
-	Config_INVALID_COMMAND_LINE_ARGS = 1,
-	Config_APPEND_RANDOM_BYTES = 2
+	Config_APPEND_RANDOM_BYTES = 1,
+	Config_KEEP_ORIGINAL_NAMES = 2
 } ConfigFlags;
 
 typedef struct {
@@ -17,10 +17,18 @@ typedef struct {
 	wchar_t const* outputDirPath;
 } Config;
 
-ErrorCode Config_Init(Config* const lpConfig);
+extern Config _g_config; // should not access this variable directly. Use Config_Get() below.
 
-void Config_Close(Config* const lpConfig);
+static inline Config const* Config_Get(void) {
+	return &_g_config;
+}
 
-void printHelp();
+ErrorCode Config_Init(void);
+
+Config const* Config_Get(void);
+
+void Config_Close(void);
+
+void printHelp(void);
 
 #endif // SearchAndCollect2_CONFIG_INCLUDED

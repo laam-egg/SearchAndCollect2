@@ -1,4 +1,4 @@
-#define VERSION L"0.9.0"
+#define VERSION L"0.9.1"
 
 #include "SearchAndCollect2/dfsfilescanner.h"
 #include "SearchAndCollect2/common.h"
@@ -46,8 +46,6 @@ int main(void) {
 
 	ErrorCode err = ERR_NONE;
 
-	Config config;
-	Config* lpConfig = NULL;
 	DFSFileScanner dfsScanner;
 	DFSFileScanner* lpDFSScanner = NULL;
 	CollectContext collectContext;
@@ -56,16 +54,15 @@ int main(void) {
 	{
 		// debug(L"INIT: Parsing config");
 
-		err = Config_Init(&config);
+		err = Config_Init();
 		if (err == ERR_COMMAND_LINE_ARGS) {
 			printHelp();
 			THROW(ERR_COMMAND_LINE_ARGS)
 		}
-		lpConfig = &config;
 	}
 
-    wchar_t const* const inputPath = config.inputPath;
-    wchar_t const* const outputDirPath = config.outputDirPath;
+    wchar_t const* const inputPath = Config_Get()->inputPath;
+    wchar_t const* const outputDirPath = Config_Get()->outputDirPath;
 
     {
 		debug(L"INIT: Checking if output directory exists...");
@@ -105,7 +102,7 @@ int main(void) {
 			TRAP(err)
 			if (dfsScannedFile.type == IS_FILE && isPEFile(dfsScannedFile.filePath)) {
 				wprintf(L"[Reading from] << %ls\n", dfsScannedFile.filePath);
-				Collector_Run(lpCollectContext, lpConfig, dfsScannedFile.filePath, outputDirPath);
+				Collector_Run(lpCollectContext, dfsScannedFile.filePath, outputDirPath);
 			}
 		}
 	}
@@ -119,17 +116,32 @@ int main(void) {
         if (lpDFSScanner != NULL) {
             DFSFileScanner_Close(lpDFSScanner);
         }
-		if (lpConfig != NULL) {
-			Config_Close(lpConfig);
-		}
+		Config_Close();
 
 	if (err != ERR_COMMAND_LINE_ARGS) {
-		debug(L"Stopping with error code %d", err);
+		if (err >= 0 && err < NUM_ERROR_MESSAGES) {
+			debug(L"Stopping with error code %d", err);
+			debug(L"Message: %ls", ErrorMessage[err]);
+			if (err == ERR_DEVELOPER_FAULT) {
+				goto devfault;
+			}
+		}
+		else {
+			debug(L"Unknown error code %d", err);
+			goto devfault;
+		}
 	}
 
 	if (err != ERR_NONE) {
 		return EXIT_FAILURE;
 	}
     return EXIT_SUCCESS;
+
+	devfault:
+		debug(L"This program was not working correctly.");
+		debug(L"Please file a new issue on GitHub at");
+		debug(L"    https://github.com/laam-egg/SearchAndCollect2/issues");
+		debug(L"with a screenshot of whatever is being displayed here. Thank you.");
+		return EXIT_FAILURE;
 }
 #endif // LK_RUN_TEST

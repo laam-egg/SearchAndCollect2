@@ -6,7 +6,7 @@
 
 #define MY_MAX_PATH_LENGTH 32767
 #define MY_MAX_FILE_NAME_LENGTH MAX_PATH
-#define MY_MAX_HASH_LENGTH 2048 // ATTENTION: may need to increase this in the future?
+#define MY_MAX_HASH_LENGTH 128 // ATTENTION: may need to increase this in the future? An SHA-512 hash is 64 bytes long.
 
 #define STATIC_ASSERT(cond, msg) typedef char static_assertion_##msg[(cond) ? 1 : -1]
 
@@ -21,6 +21,8 @@ void safeWstrcat(wchar_t* dest, size_t const destSize, wchar_t const* tail);
 void concatPaths(wchar_t* dest, size_t const destSize, wchar_t const* tail);
 
 wchar_t const* getFileExtension(wchar_t const* const path);
+
+wchar_t const* getFileNameFromPath(wchar_t const* const path);
 
 int randomNumberInRangeInclusive(int min, int max);
 

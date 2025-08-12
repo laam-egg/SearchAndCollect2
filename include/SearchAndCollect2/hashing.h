@@ -30,7 +30,9 @@ ErrorCode Hasher_Init(Hasher* const hasher, HasherConfig* const config);
 
 void Hasher_Close(Hasher* const hasher);
 
-ErrorCode Hasher_BeginHashing(Hasher const* const hasher, HashingContext* const lpHashingContext, size_t* hashOutputSize);
+size_t Hasher_GetHashOutputSize(Hasher const* const hasher);
+
+ErrorCode Hasher_BeginHashing(Hasher const* const hasher, HashingContext* const ctx);
 
 ErrorCode HashingContext_DigestBlock(HashingContext* const ctx, void* data, size_t dataSize);
 

@@ -50,10 +50,16 @@ ErrorCode Hasher_Init(Hasher* const hasher, HasherConfig* const lpConfig) {
 }
 
 void Hasher_Close(Hasher* const hasher) {
-    BCryptCloseAlgorithmProvider(hasher->hAlg, 0);
+    if (hasher->hAlg != NULL) {
+        BCryptCloseAlgorithmProvider(hasher->hAlg, 0);
+    }
 }
 
-ErrorCode Hasher_BeginHashing(Hasher const* const hasher, HashingContext* const ctx, size_t* lpHashOutputSize) {
+size_t Hasher_GetHashOutputSize(Hasher const* const hasher) {
+    return (size_t)(hasher->dwHashLength) * sizeof(BYTE);
+}
+
+ErrorCode Hasher_BeginHashing(Hasher const* const hasher, HashingContext* const ctx) {
     ErrorCode err = ERR_NONE;
     NTSTATUS stt = STATUS_SUCCESS;
 
@@ -78,8 +84,6 @@ ErrorCode Hasher_BeginHashing(Hasher const* const hasher, HashingContext* const 
             THROW(ERR_WINAPI)
         }
     }
-
-    lpHashOutputSize[0] = (size_t)(hasher->dwHashLength) * sizeof(BYTE);
 
     cleanup:
     if (err != ERR_NONE) {
@@ -109,9 +113,21 @@ ErrorCode HashingContext_DigestBlock(HashingContext* const ctx, void* data, size
 
 ErrorCode HashingContext_FinishHashing(HashingContext* const ctx, BYTE* const lpHashOutput, size_t const hashOutputSize) {
     ErrorCode err = ERR_NONE;
+    NTSTATUS stt = STATUS_SUCCESS;
 
-    if (STATUS_SUCCESS != BCryptFinishHash(ctx->hHash, lpHashOutput, hashOutputSize, 0)) {
-        debug(L"ERROR: HashingContext_FinishHashing(): call to BCryptFinishHash() failed");
+    if (hashOutputSize < Hasher_GetHashOutputSize(ctx->pHasher)) {
+        debug(
+            L"ERROR: HashingContext_FinishHashing(): hash output buffer has insufficient capacity: %zu < %zu",
+            hashOutputSize,
+            Hasher_GetHashOutputSize(ctx->pHasher)
+        );
+        THROW(ERR_OUT_OF_MEMORY)
+    }
+
+    stt = BCryptFinishHash(ctx->hHash, lpHashOutput, Hasher_GetHashOutputSize(ctx->pHasher), 0);
+    if (STATUS_SUCCESS != stt) {
+        DWORD dwLastError = GetLastError();
+        debug(L"ERROR: HashingContext_FinishHashing(): call to BCryptFinishHash() failed with status %lu, GetLastError() = %lu", stt, dwLastError);
         THROW(ERR_WINAPI)
     }
 
@@ -125,6 +141,11 @@ void HashingContext_CloseForcefully(HashingContext* const ctx) {
 }
 
 // Cre ChatGPT
+/**
+ * `len` is the hash length in bytes, e.g. 32 for SHA-256;
+ * which means `out` must be a buffer having capacity
+ * of at least `len * 2 + 1` characters.
+ */
 void hashToHex(BYTE const* hash, DWORD len, wchar_t *out) {
     static const wchar_t hex[] = L"0123456789abcdef";
     for (DWORD i = 0; i < len; i++) {

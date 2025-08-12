@@ -1,6 +1,8 @@
 #include "SearchAndCollect2/config.h"
 #include <windows.h>
 
+Config _g_config = { 0 };
+
 #define TRAP(ERR) err = ERR; if (err != ERR_NONE) goto cleanup;
 #define THROW(ERR) err = ERR; goto cleanup;
 
@@ -23,6 +25,13 @@ static ConfigOption const AVAILABLE_OPTIONS[] = {
 		L"    If set, add a few random bytes at the end of the copied file to change the\n"
 		L"file's signature, which evades signature-based malware detection. The copied file\n"
 		L"is still named after the hash of the original file.\n"
+	},
+
+	{
+		L"keep-original-names",
+		Config_KEEP_ORIGINAL_NAMES,
+		L"    If set, instead of naming the copied files after their original hashes, retain\n"
+		L"the original file names.\n"
 	}
 };
 static int const NUM_AVAILABLE_OPTIONS = sizeof(AVAILABLE_OPTIONS) / sizeof(AVAILABLE_OPTIONS[0]);
@@ -31,12 +40,13 @@ ErrorCode matchOption(Config* const lpConfig, wchar_t const* const optionName);
 ErrorCode matchPositionalArgument(Config* const lpConfig, int const positionalArgumentOrdinal, wchar_t const* const argument);
 static int const NUM_POSITIONAL_PARAMETERS;
 
-ErrorCode Config_Init(Config* const lpConfig) {
+ErrorCode Config_Init() {
+	Config* const lpConfig = &_g_config;
 	ErrorCode err = ERR_NONE;
 	memset(lpConfig, 0, sizeof(Config));
 
 	{
-		lpConfig->argv = CommandLineToArgvW(GetCommandLineW(), &lpConfig->argc);
+		lpConfig->argv = (wchar_t const* const*)CommandLineToArgvW(GetCommandLineW(), &lpConfig->argc);
 		if (!lpConfig->argv) {
 			DWORD dwLastError = GetLastError();
 			debug(L"ERROR: Config_Init(): CommandLineTArgvW() failed with GetLastError = %lu", dwLastError);
@@ -77,16 +87,18 @@ ErrorCode Config_Init(Config* const lpConfig) {
 
 	cleanup:
 		if (err != ERR_NONE) {
-			Config_Close(lpConfig);
+			Config_Close();
 		}
 
 	return err;
 }
 
-void Config_Close(Config* const lpConfig) {
+void Config_Close() {
+	Config* const lpConfig = &_g_config;
 	if (lpConfig->argv != NULL) {
-		LocalFree(lpConfig->argv);
+		LocalFree((void*)lpConfig->argv);
 	}
+	memset(lpConfig, 0, sizeof(Config));
 }
 
 ///////////////////////////////////////////
@@ -115,7 +127,7 @@ ErrorCode matchOption(Config* const lpConfig, wchar_t const* const optionName) {
 ////// MATCHING POSITIONAL ARGUMENTS //////
 ///////////////////////////////////////////
 
-int const NUM_POSITIONAL_PARAMETERS = 2;
+static int const NUM_POSITIONAL_PARAMETERS = 2;
 
 ErrorCode matchPositionalArgument(Config* const lpConfig, int const positionalArgumentOrdinal, wchar_t const* const argument) {
 	ErrorCode err = ERR_NONE;
@@ -165,7 +177,7 @@ void printHelp() {
 
 	for (int i = 0; i < NUM_AVAILABLE_OPTIONS; ++i) {
 		ConfigOption const* const currentOption = &AVAILABLE_OPTIONS[i];
-		wprintf(L"--%ls\n%ls\n\n", currentOption->name, currentOption->explanation);
+		wprintf(L"--%ls\n%ls\n", currentOption->name, currentOption->explanation);
 	}
 
 	wprintf(
