@@ -4,6 +4,17 @@ project(SearchAndCollect2 LANGUAGES C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+##########################
+##### STATIC LINKING #####
+#### so that it could ####
+## run on older systems ##
+## without VC redist... ##
+##########################
+
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 set(SOURCES
     src/main.c
     src/common.c                include/SearchAndCollect2/common.h
@@ -61,3 +72,17 @@ endif()
 add_executable(SearchAndCollect2 ${SOURCES})
 target_include_directories(SearchAndCollect2 PRIVATE ${INCLUDES})
 target_link_libraries(SearchAndCollect2 PRIVATE ${LIBRARIES})
+
+##########################
+##### STATIC LINKING #####
+#### so that it could ####
+## run on older systems ##
+## without VC redist... ##
+##########################
+
+if(MSVC)
+    target_link_options(SearchAndCollect2 PRIVATE /SUBSYSTEM:CONSOLE,5.01)
+endif()
+if(MINGW)
+    target_link_options(SearchAndCollect2 PRIVATE -static -static-libgcc)
+endif()
